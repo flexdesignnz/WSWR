@@ -116,21 +116,29 @@ function getWeather() {
                 $('.api_value').each(function (k, v) {
                     if (count == 0) {
                         var key = $(this).html();
-                        var value = data.variables[key].data[0];
+                        if(key == 'rainfal_24hracc'){
+                            var value = 0;
+                        }else{
+                            var value = data.variables[key].data[0];
+                        }
                     }else{
                         var key = $(this).attr('data-key');
-                        var value = data.variables[key].data[0];
+                        if(key == 'rainfal_24hracc'){
+                            var value = 0;
+                        }else{
+                            var value = data.variables[key].data[0];
+                        }
                     }
 
                     // Process weather data for the first call
-                    if (key == 'windspd_01mnavg' || key == 'windgst_10mnmax') {
+                    if (key == 'windspd_01mnavg' || key == 'windgst_10mnmax') { // wind speed & wind gust
                         value = (value * 1.852).toFixed(1)
                         var nvalue = value.toString();
                         var parts = nvalue.split('.')
                         if (parts.length === 2) {
-                            value = parts[0] + '<span style="font-size: 75%;">.</span><span style="font-size: 65%;">' + parts[1] + '</span>'
+                            value = parts[0];
                         }
-                    } else if (key == 'windcw__01mnmax') {
+                    } else if (key == 'windcw__01mnmax') { // wind direction
                         console.log(value,'windcw__01mnmax')
                         var input = flipWindDirection(value)
                         // input = 360
@@ -138,6 +146,12 @@ function getWeather() {
                         // input = value / 11.25;
                         // input = input + .5 | 0;
                         value = calcPoint(value)
+                    } else if (key == 'relhumd_01mnavg') { // Humidity
+                        var nvalue = value.toString();
+                        var parts = nvalue.split('.')
+                        if (parts.length === 2) {
+                            value = parts[0] + '<span style="font-size: 75%;">.</span><span style="font-size: 65%;">' + parts[1] + '</span>'
+                        }
                     } else {
                         var nvalue = value.toString();
                         var parts = nvalue.split('.')
@@ -147,7 +161,15 @@ function getWeather() {
                     }
                     
                     $(this).attr('data-key', key)
-                    if ($(this).data('value') != data.variables[key].data[0]) {
+                    if(key == 'rainfal_24hracc'){
+                        value = getrain24hr()
+                        var nvalue = value.toString();
+                        var parts = nvalue.split('.')
+                        if (parts.length === 2) {
+                            value = parts[0] + '<span style="font-size: 50%;">.</span><span style="font-size: 65%;">' + parts[1] + '</span>'
+                        }
+                        $(this).html(`${value}`).show().fadeOut(250).fadeIn(250);
+                    }else if ($(this).data('value') != data.variables[key].data[0]) {
                         $(this).attr('data-value', data.variables[key].data[0])
                         $(this).html(`${value}`).show().fadeOut(250).fadeIn(250);
                     } else {
@@ -277,8 +299,11 @@ $(".dynamic_svg").each(function (index) {
 // Function to calculate average temperature
 function calculateAverage(temperatures) {
     console.log(temperatures,'avg')
-    const sum = temperatures.reduce((acc, curr) => acc + parseFloat(curr), 0);
-    return parseFloat((sum / temperatures.length).toFixed(1));
+    if(temperatures != null){
+        const sum = temperatures.reduce((acc, curr) => acc + parseFloat(curr), 0);
+        return parseFloat((sum / temperatures.length).toFixed(1));
+    }
+    return 0;
 }
 
 // Function to determine arrow direction
@@ -320,6 +345,8 @@ function hourlyCycle() {
            
         }
     })
+    
+    
 }
 
 // Immediately Invoked Function Expression (IIFE) to fetch data from Webflow API
@@ -353,37 +380,167 @@ function hourlyCycle() {
 })();
 
 // Schedule hourly cycle to run every hour
+setInterval(getgraphdata, 60 * 60 * 1000); // Run every hour
 setInterval(hourlyCycle, 60 * 60 * 1000); // Run every hour
 
 //Get last 24 hr data
-$.ajax({
-url: "https://wswr.auramatics.com/getgraphdata.php",
-type: 'GET',
-    success: function (response, status, xhr) {
-      var graph_data = response
-      console.log(graph_data,'graph_data')
-       plotChart(graph_data)
+
+function getgraphdata(){
+    generateTimeLabels()
+    var graph_data = [];
+    $.ajax({
+    url: "https://wswr.auramatics.com/getgraphdata.php",
+    type: 'GET',
+    data:{
+        dates:generateDateTimeLabels()
+    },
+        success: function (response, status, xhr) {
+            
+        console.log(response,'response')
+        // var new_data = [];
+        // var count = 0
+        
+        // for (let i = 0; i < response.length; i++) 
+        // {
+        //     if (i > 0 && response[i] === response[i - 1]) 
+        //     {
+        //         new_data[count -1] = 'skip';
+        //     }else{
+        //         new_data[count] = response[i]
+        //     }
+        //     count++;
+        // }
+        // console.log(new_data,'new_data')
+        // //new_data.reverse();
+        // count = 3
+        // $('.small_data_trend_wrapper div').each(function(i){
+        //     if(new_data[count] == 'skip'){
+        //         $(this).html('')
+        //     }else{
+        //         $(this).html(new_data[count])
+        //     }
+        //     count--
+        // })
+          graph_data = response
+          plotChart(graph_data)
+          getgrapharrow()
+        }
+    })
+}
+function getgrapharrow(){
+    $.ajax({
+        url: "https://wswr.auramatics.com/getgrapharrow.php",
+        type: 'GET',
+        data:{
+            v:"3",
+            dates:generateDateTimeLabels(),
+        },
+        success: function (response, status, xhr) {
+            const newElement = document.createElement('div');
+            newElement.innerHTML = response;
+            const referenceDiv = document.getElementById('pressure_trend_graph');
+            referenceDiv.insertAdjacentElement('afterend', newElement);
+        }
+    })
+}
+function generateDateTimeLabels() {
+    const labels = [];
+    const now = new Date();
+    now.setDate(now.getDate() - 1);
+    // console.log(now)
+    let hour = now.getHours();
+    
+    // Determine the nearest starting hour (6 AM, 2 PM, or 10 PM)
+    if (hour >= 6 && hour < 14) {
+        hour = 6;
+    } else if (hour >= 14 && hour < 22) {
+        hour = 14;
+    } else if (hour >= 22) {
+        hour = 22;
     }
-})
+
+    let currentDate = new Date(now);
+    currentDate.setHours(hour);
+    currentDate.setMinutes(0);
+    currentDate.setSeconds(0);
+
+    for (let i = 0; i < 4; i++) {
+        // Convert to full date and time in the format Y-m-d H:i:s
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const hours = String(currentDate.getHours()).padStart(2, '0');
+        const minutes = String(currentDate.getMinutes()).padStart(2, '0');
+        const seconds = String(currentDate.getSeconds()).padStart(2, '0');
+        const timeLabel = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        labels.push(timeLabel);
+        
+        // Increment the current date by 8 hours
+        currentDate.setHours(currentDate.getHours() + 8);
+    }
+    
+    return labels;
+}
+
+function generateTimeLabels() {
+    const labels = [];
+    const now = new Date();
+    let hour = now.getHours();
+    let period = hour >= 12 ? 'pm' : 'am';
+    
+    console.log(hour,period)
+    // Determine the nearest starting hour (6 AM, 2 PM, or 10 PM)
+    if (hour >= 6 && hour < 14) {
+        hour = 6;
+    } else if (hour >= 14 && hour < 22) {
+        hour = 14;
+    } else if (hour >= 22) {
+        hour = 22;
+    }
+    
+    console.log(hour,period)
+    for (let i = 0; i < 4; i++) {
+        let hour12 = (hour % 12) || 12; // Convert hour to 12-hour format
+        let time = `${hour12}${period}`;
+        labels.push(time);
+        hour = (hour + 8) % 24; // Increment by 8 hours, wrap around at 24 hours
+        if (hour >= 12) period = 'pm'; // Update period if hour crosses 12
+        else period = 'am';
+    }
+    
+    $('.time_wrapper div').each(function(i){
+        $(this).html(labels[i])
+    })
+    
+    return labels;
+}
 
 // Presssure Trend Graph
 function plotChart(graph_data) {
+    var g_data = graph_data;
     var ctx = document.getElementById('pressure_trend_graph').getContext('2d');
+    Chart.defaults.color = '#fff';
     var myChart = new Chart(ctx, {
         type: 'line',
         data: {
+            labels: generateTimeLabels(),
             datasets: [{
                 label: '',
-                data: graph_data,
+                data: graph_data.map(parseFloat),
                 borderColor: 'rgb(75, 192, 192)',
-                tension: 0,  // Disable bezier curves
+                tension: 0.3,  // Disable bezier curves
                 backgroundColor: 'rgba(120,136,170)',
                 borderColor: 'rgba(120,136,170)',
                 fill: true,
                 pointRadius: 0  // Hide points
             }]
         },
+        
         options: {
+            responsive: true,
+            interaction: {
+              intersect: false,
+            },
             plugins: {
                 legend: {
                     display: false
@@ -391,13 +548,17 @@ function plotChart(graph_data) {
             },
             scales: {
                 x: {
-                    display: false,  // Hide x-axis
+                    display: true, // Hide x-axis
                     grid: {
                         display: false, // Remove gridlines
-                    }
+                    },
                 },
                 y: {
-                    display: false,  // Hide x-axis
+                    ticks: {
+                        stepSize: 5,
+                    },
+                    position: 'right', // Display y-axis on the right
+                    display: true,  // Hide x-axis
                     grid: {
                         display: false, // Remove gridlines' 
                     }
@@ -406,12 +567,37 @@ function plotChart(graph_data) {
             bezierCurve : false
         }
     });
+    
+    
 }
 
 function flipWindDirection(degree) {
     // Add 180 degrees and take modulus by 360
     return (degree + 180) % 360;
 }
+
+function rain_ajax(){
+    
+}
+
+var data = 0;
+function getrain24hr(){
+    var rain =  $.ajax({
+        url: "https://wswr.auramatics.com/getrain24hr.php",
+        type: 'GET',
+        async: false,
+        success: function (response) {
+           data = response;
+        },
+        error: function (error) {
+            reject(error);
+        }
+    });
+    console.log(data,'getrain24hr')
+    return data;
+}
+
+getgraphdata()
 
 
 
