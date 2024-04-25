@@ -48,9 +48,9 @@ function determineRange(number) {
     } else if (20 <= number && number <= 28) {
         return "23.58";
     } else if (29 <= number && number <= 38) {
-        return "31.74";
+        return "65.74";
     } else if (39 <= number && number <= 49) {
-        return "40.81";
+        return "70.81";
     } else if (50 <= number && number <= 61) {
         return "75.78";
     } else if (62 <= number && number <= 74) {
@@ -92,10 +92,10 @@ function animateElement(number) {
     const speed = Math.floor(getRandom(minSpeed, maxSpeed));
     const gradient = generateGradient(wind_number);
     element.style.position = `absolute`;
-    element.style.width = `3.75rem`;
+    element.style.width = `3.75em`;
     element.style.height = `${newHeight}%`;
     element.style.backgroundImage = gradient;
-    element.style.bottom = `0rem`
+    element.style.bottom = `0em`
     $('.wind_gauge_icon_wrapper').css('position', 'relative').css('bottom', `${newHeightGuage}%`).css('transition', 'height 1s ease-in-out, background-color 1s ease-in-out')
 }
 
