@@ -52,17 +52,17 @@ function determineRange(number) {
     } else if (39 <= number && number <= 49) {
         return "40.81";
     } else if (50 <= number && number <= 61) {
-        return "50.78";
+        return "75.78";
     } else if (62 <= number && number <= 74) {
-        return "61.66";
+        return "80.66";
     } else if (75 <= number && number <= 88) {
-        return "73.44";
+        return "85.44";
     } else if (89 <= number && number <= 102) {
-        return "85.22";
+        return "90.22";
     } else if (103 <= number && number <= 117) {
         return "95.92";
     } else {
-        return "95";
+        return "100";
     }
 }
 
