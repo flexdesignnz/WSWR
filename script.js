@@ -48,21 +48,21 @@ function determineRange(number) {
     } else if (20 <= number && number <= 28) {
         return "23.58";
     } else if (29 <= number && number <= 38) {
-        return "65.74";
+        return "31.74";
     } else if (39 <= number && number <= 49) {
-        return "70.81";
+        return "40.81";
     } else if (50 <= number && number <= 61) {
-        return "75.78";
+        return "50.78";
     } else if (62 <= number && number <= 74) {
-        return "80.66";
+        return "61.66";
     } else if (75 <= number && number <= 88) {
-        return "85.44";
+        return "73.44";
     } else if (89 <= number && number <= 102) {
-        return "90.22";
+        return "85.22";
     } else if (103 <= number && number <= 117) {
         return "95.92";
     } else {
-        return "100";
+        return "95";
     }
 }
 
@@ -92,10 +92,10 @@ function animateElement(number) {
     const speed = Math.floor(getRandom(minSpeed, maxSpeed));
     const gradient = generateGradient(wind_number);
     element.style.position = `absolute`;
-    element.style.width = `3.75em`;
+    element.style.width = `3.75rem`;
     element.style.height = `${newHeight}%`;
     element.style.backgroundImage = gradient;
-    element.style.bottom = `0em`
+    element.style.bottom = `0rem`
     $('.wind_gauge_icon_wrapper').css('position', 'relative').css('bottom', `${newHeightGuage}%`).css('transition', 'height 1s ease-in-out, background-color 1s ease-in-out')
 }
 
@@ -391,9 +391,6 @@ function getgraphdata(){
     $.ajax({
     url: "https://wswr.auramatics.com/getgraphdata.php",
     type: 'GET',
-    data:{
-        dates:generateDateTimeLabels()
-    },
         success: function (response, status, xhr) {
             
         console.log(response,'response')
@@ -431,15 +428,12 @@ function getgrapharrow(){
     $.ajax({
         url: "https://wswr.auramatics.com/getgrapharrow.php",
         type: 'GET',
-        data:{
-            v:"3",
-            dates:generateDateTimeLabels(),
-        },
         success: function (response, status, xhr) {
-            const newElement = document.createElement('div');
-            newElement.innerHTML = response;
-            const referenceDiv = document.getElementById('pressure_trend_graph');
-            referenceDiv.insertAdjacentElement('afterend', newElement);
+            console.log(response)
+            $('.graph_arrow_wrapper img').each(function(i){
+                $(this).attr('src',response[i])
+            })
+            
         }
     })
 }
@@ -523,16 +517,16 @@ function plotChart(graph_data) {
     var myChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: generateTimeLabels(),
+            labels: graph_data.timearray,
             datasets: [{
                 label: '',
-                data: graph_data.map(parseFloat),
+                data: graph_data.weather_data.map(parseFloat),
                 borderColor: 'rgb(75, 192, 192)',
                 tension: 0.3,  // Disable bezier curves
                 backgroundColor: 'rgba(120,136,170)',
                 borderColor: 'rgba(120,136,170)',
                 fill: true,
-                pointRadius: 0  // Hide points
+                pointBackgroundColor: ['red', 'blue', 'red', 'red', 'blue', 'red'],
             }]
         },
         
@@ -548,7 +542,7 @@ function plotChart(graph_data) {
             },
             scales: {
                 x: {
-                    display: true, // Hide x-axis
+                    display: false, // Hide x-axis
                     grid: {
                         display: false, // Remove gridlines
                     },
@@ -564,7 +558,7 @@ function plotChart(graph_data) {
                     }
                 }
             },
-            bezierCurve : false
+            bezierCurve : true
         }
     });
     
@@ -598,6 +592,3 @@ function getrain24hr(){
 }
 
 getgraphdata()
-
-
-
